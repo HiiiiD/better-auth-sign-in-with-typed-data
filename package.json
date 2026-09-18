@@ -26,7 +26,7 @@
   },
   "scripts": {
     "test": "bun test",
-    "build": "rm -rf dist && bun build ./index.ts ./client.ts --target=node --outdir=dist --external '*' && tsc -p tsconfig.build.json",
+    "build": "rm -rf dist && bun build ./index.ts ./client.ts ./schema.ts --target=node --outdir=dist --external '*' && tsc -p tsconfig.build.json",
     "prepublishOnly": "bun run build"
   },
   "devDependencies": {
