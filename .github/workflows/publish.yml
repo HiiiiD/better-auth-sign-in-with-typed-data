@@ -25,7 +25,9 @@ jobs:
 
       # Trusted publishing needs npm >=11.5.1; the version bundled with
       # setup-node's node-version may be older, so pin it explicitly.
-      - run: npm install -g npm@latest
+      # Pinned (not @latest) because newer npm majors require a node engine
+      # ahead of the node-version above and fail with EBADENGINE.
+      - run: npm install -g npm@11.5.1
 
       - run: bun install --frozen-lockfile
       - run: bun test
