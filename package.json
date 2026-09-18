@@ -2,10 +2,24 @@
   "name": "better-auth-sign-in-with-vechain",
   "module": "index.ts",
   "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./client": "./client.ts"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
   "devDependencies": {
+    "@better-auth/memory-adapter": "^1.7.5",
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^7"
+  },
+  "dependencies": {
+    "@better-auth/core": "^1.7.5",
+    "better-auth": "^1.7.5",
+    "viem": "^2.56.8",
+    "zod": "^4.6.5"
   }
 }
