@@ -1,22 +1,18 @@
 name: Version
 
-# Keeps the "Version Packages" PR (bumped version + changelog) up to date.
-# Does NOT publish — publishing happens from the Publish workflow, triggered
-# by pushing the git tag once the Version PR is merged.
+# Manually triggered when you're ready to cut a release (not on every
+# commit to master). Bumps the version + changelog from accumulated
+# changesets, commits straight to master, and tags the release — the tag
+# push triggers the Publish workflow.
 
 on:
-  push:
-    branches:
-      - master
-
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+  workflow_dispatch:
 
 jobs:
   version:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,19 +25,16 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun test
 
-      - name: Create/update Version Packages PR
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          version: bunx changeset version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Bump version and changelog
+        run: bunx changeset version
 
-      # No changesets left pending == this push was the Version PR merging.
-      # Tag the release; the tag push triggers the Publish workflow.
-      - name: Tag release
-        if: steps.changesets.outputs.hasChangesets == 'false'
+      - name: Commit and tag
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: release v$VERSION"
           git tag "v$VERSION"
+          git push origin master
           git push origin "v$VERSION"

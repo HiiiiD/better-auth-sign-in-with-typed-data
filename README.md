@@ -97,12 +97,15 @@ bun test
 
 ## Releasing
 
-Versioning and publishing to npm are handled by
-[changesets](https://github.com/changesets/changesets):
+Versioning uses [changesets](https://github.com/changesets/changesets), but
+nothing bumps automatically on every push to `master` — commits accumulate
+until you're ready to cut a release:
 
-1. Run `bunx changeset` on your branch/PR and describe the change; commit the
-   generated file under `.changeset/`.
-2. Merging to `master` triggers the `Release` workflow, which opens/updates a
-   "Version Packages" PR with the bumped version and changelog.
-3. Merging that PR triggers the workflow again, which publishes the new
-   version to npm.
+1. On each PR that needs a release note, run `bunx changeset` and describe
+   the change; commit the generated file under `.changeset/`.
+2. When ready to release, manually run the `Version` workflow (Actions tab
+   → Version → Run workflow). It bumps the version, updates the changelog
+   from all pending changesets, commits straight to `master`, and pushes a
+   `vX.Y.Z` tag.
+3. The tag push triggers the `Publish` workflow, which builds and publishes
+   to npm.
