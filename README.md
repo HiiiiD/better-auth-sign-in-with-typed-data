@@ -94,3 +94,15 @@ const { data } = await authClient.siwtd.verify({
 ```bash
 bun test
 ```
+
+## Releasing
+
+Versioning and publishing to npm are handled by
+[changesets](https://github.com/changesets/changesets):
+
+1. Run `bunx changeset` on your branch/PR and describe the change; commit the
+   generated file under `.changeset/`.
+2. Merging to `master` triggers the `Release` workflow, which opens/updates a
+   "Version Packages" PR with the bumped version and changelog.
+3. Merging that PR triggers the workflow again, which publishes the new
+   version to npm.

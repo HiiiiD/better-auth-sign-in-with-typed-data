@@ -1,16 +1,38 @@
 {
   "name": "better-auth-sign-in-with-typed-data",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "A better-auth plugin for logging in by signing EIP-712 typed data instead of a SIWE plain-text message.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HiiiiD/better-auth-sign-in-with-typed-data.git"
+  },
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./index.ts",
-    "./client": "./client.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    }
   },
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "build": "rm -rf dist && bun build ./index.ts ./client.ts --target=node --outdir=dist --external '*' && tsc -p tsconfig.build.json",
+    "prepublishOnly": "bun run build"
   },
   "devDependencies": {
     "@better-auth/memory-adapter": "^1.7.5",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@types/bun": "latest"
   },
   "peerDependencies": {
