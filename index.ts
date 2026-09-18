@@ -305,6 +305,7 @@ export const siwtd = (options: SIWTDPluginOptions) => {
 						});
 					} catch (error: unknown) {
 						if (isAPIError(error)) throw error;
+						ctx.context.logger.error("SIWTD verify failed", error);
 						throw new APIError("UNAUTHORIZED", {
 							message: "Something went wrong. Please try again later.",
 						});
