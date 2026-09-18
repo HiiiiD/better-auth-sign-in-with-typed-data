@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "better-auth-sign-in-with-vechain",
+      "name": "better-auth-sign-in-with-typed-data",
       "dependencies": {
         "@better-auth/core": "^1.7.5",
         "better-auth": "^1.7.5",
