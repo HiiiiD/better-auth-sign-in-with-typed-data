@@ -11,8 +11,8 @@ import {
 	type TypedDataDomain,
 } from "viem";
 import * as z from "zod";
-import { schema, type WalletAddressSchema } from "./schema";
-import type { ENSLookupArgs, ENSLookupResult, WalletAddress } from "./types";
+import { schema, type WalletAddressSchema } from "./schema.js";
+import type { ENSLookupArgs, ENSLookupResult, WalletAddress } from "./types.js";
 
 export interface SIWTDDomainOptions {
 	name?: string;

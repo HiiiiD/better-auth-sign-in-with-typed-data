@@ -4,8 +4,8 @@ import { createAuthClient } from "better-auth/client";
 import { memoryAdapter } from "@better-auth/memory-adapter";
 import type { MemoryDB } from "@better-auth/memory-adapter";
 import { privateKeyToAccount } from "viem/accounts";
-import { siwtd } from "./index";
-import { siwtdClient } from "./client";
+import { siwtd } from "./index.js";
+import { siwtdClient } from "./client.js";
 
 interface SiwtdVerifyResponse {
 	token: string;

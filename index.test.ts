@@ -5,8 +5,8 @@ import { memoryAdapter } from "@better-auth/memory-adapter";
 import type { MemoryDB } from "@better-auth/memory-adapter";
 import { privateKeyToAccount } from "viem/accounts";
 import type { TypedData, TypedDataDomain } from "viem";
-import { siwtd } from "./index";
-import { siwtdClient } from "./client";
+import { siwtd } from "./index.js";
+import { siwtdClient } from "./client.js";
 
 const PRIVATE_KEY =
 	"0xdf859a20834dfe39a1a15b5b16550261e652010281c5529bfb967b24c1c107c4" as const;
