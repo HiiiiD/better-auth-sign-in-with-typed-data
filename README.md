@@ -1,4 +1,4 @@
-# better-auth-sign-in-with-vechain (SIWTD)
+# better-auth-sign-in-with-typed-data (SIWTD)
 
 A better-auth plugin for logging in by signing EIP-712 typed data, instead of
 an ERC-4361 (SIWE) plain-text message. Works with any EVM-style secp256k1
@@ -12,14 +12,14 @@ There is no email/password support: wallet address is the sole identity.
 ## Install
 
 ```bash
-bun add better-auth-sign-in-with-vechain viem
+bun add better-auth-sign-in-with-typed-data viem
 ```
 
 ## Server
 
 ```ts
 import { betterAuth } from "better-auth";
-import { siwtd } from "better-auth-sign-in-with-vechain";
+import { siwtd } from "better-auth-sign-in-with-typed-data";
 
 export const auth = betterAuth({
   plugins: [
@@ -35,7 +35,7 @@ export const auth = betterAuth({
 
 ```ts
 import { createAuthClient } from "better-auth/client";
-import { siwtdClient } from "better-auth-sign-in-with-vechain/client";
+import { siwtdClient } from "better-auth-sign-in-with-typed-data/client";
 
 export const authClient = createAuthClient({
   plugins: [siwtdClient()],

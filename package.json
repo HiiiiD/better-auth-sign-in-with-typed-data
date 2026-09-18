@@ -1,5 +1,5 @@
 {
-  "name": "better-auth-sign-in-with-vechain",
+  "name": "better-auth-sign-in-with-typed-data",
   "module": "index.ts",
   "type": "module",
   "exports": {
