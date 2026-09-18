@@ -164,7 +164,8 @@ export const siwtd = (options: SIWTDPluginOptions) => {
 								code: "UNAUTHORIZED_INVALID_SIGNATURE",
 							});
 						}
-						const walletAddress = getAddress(recovered);
+						// getAddress validates + checksums for correctness, but all storage/lookups use lowercase
+						const walletAddress = getAddress(recovered).toLowerCase() as `0x${string}`;
 
 						const expirationTime = message.expirationTime;
 						const notBefore = message.notBefore;
