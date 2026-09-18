@@ -1,7 +1,8 @@
 import type { BetterAuthPlugin } from "better-auth";
 import { APIError, createAuthEndpoint, isAPIError } from "better-auth/api";
+import { setSessionCookie } from "better-auth/cookies";
 import { mergeSchema } from "better-auth/db";
-import type { InferOptionSchema } from "better-auth/types";
+import type { InferOptionSchema, User } from "better-auth/types";
 import {
 	getAddress,
 	recoverTypedDataAddress,
@@ -11,7 +12,7 @@ import {
 } from "viem";
 import * as z from "zod";
 import { schema, type WalletAddressSchema } from "./schema";
-import type { ENSLookupArgs, ENSLookupResult } from "./types";
+import type { ENSLookupArgs, ENSLookupResult, WalletAddress } from "./types";
 
 export interface SIWTDDomainOptions {
 	name?: string;
@@ -69,6 +70,10 @@ function domainMatches(
 	if (expected.version !== undefined && expected.version !== signed.version)
 		return false;
 	return true;
+}
+
+function createPlaceholderEmail(address: string) {
+	return `${address.toLowerCase()}@siwtd.invalid`;
 }
 
 export const siwtd = (options: SIWTDPluginOptions) => {
@@ -183,7 +188,120 @@ export const siwtd = (options: SIWTDPluginOptions) => {
 							}
 						}
 
-						return ctx.json({ walletAddress, chainId: signedChainId });
+						let user: User | null = null;
+
+						const existingWalletAddress: WalletAddress | null =
+							await ctx.context.adapter.findOne({
+								model: "walletAddress",
+								where: [
+									{ field: "address", operator: "eq", value: walletAddress },
+									{ field: "chainId", operator: "eq", value: signedChainId },
+								],
+							});
+
+						if (existingWalletAddress) {
+							user = await ctx.context.adapter.findOne({
+								model: "user",
+								where: [
+									{
+										field: "id",
+										operator: "eq",
+										value: existingWalletAddress.userId,
+									},
+								],
+							});
+						} else {
+							const anyWalletAddress: WalletAddress | null =
+								await ctx.context.adapter.findOne({
+									model: "walletAddress",
+									where: [
+										{ field: "address", operator: "eq", value: walletAddress },
+									],
+								});
+							if (anyWalletAddress) {
+								user = await ctx.context.adapter.findOne({
+									model: "user",
+									where: [
+										{
+											field: "id",
+											operator: "eq",
+											value: anyWalletAddress.userId,
+										},
+									],
+								});
+							}
+						}
+
+						if (!user) {
+							const { name, avatar } =
+								(await options.ensLookup?.({ walletAddress })) ?? {};
+							user = await ctx.context.internalAdapter.createUser(
+								{
+									name: name ?? walletAddress,
+									email: createPlaceholderEmail(walletAddress),
+									image: avatar ?? "",
+								},
+								{ method: "siwtd" },
+							);
+
+							await ctx.context.adapter.create({
+								model: "walletAddress",
+								data: {
+									userId: user.id,
+									address: walletAddress,
+									chainId: signedChainId,
+									isPrimary: true,
+									createdAt: new Date(),
+								},
+							});
+
+							await ctx.context.internalAdapter.createAccount({
+								userId: user.id,
+								providerId: "siwtd",
+								accountId: `${walletAddress}:${signedChainId}`,
+								createdAt: new Date(),
+								updatedAt: new Date(),
+							});
+						} else if (!existingWalletAddress) {
+							await ctx.context.adapter.create({
+								model: "walletAddress",
+								data: {
+									userId: user.id,
+									address: walletAddress,
+									chainId: signedChainId,
+									isPrimary: false,
+									createdAt: new Date(),
+								},
+							});
+
+							await ctx.context.internalAdapter.createAccount({
+								userId: user.id,
+								providerId: "siwtd",
+								accountId: `${walletAddress}:${signedChainId}`,
+								createdAt: new Date(),
+								updatedAt: new Date(),
+							});
+						}
+
+						const session = await ctx.context.internalAdapter.createSession(
+							user.id,
+						);
+						if (!session) {
+							throw new APIError("INTERNAL_SERVER_ERROR", {
+								message: "Failed to create session",
+							});
+						}
+						await setSessionCookie(ctx, { session, user });
+
+						return ctx.json({
+							token: session.token,
+							success: true,
+							user: {
+								id: user.id,
+								walletAddress,
+								chainId: signedChainId,
+							},
+						});
 					} catch (error: unknown) {
 						if (isAPIError(error)) throw error;
 						throw new APIError("UNAUTHORIZED", {
