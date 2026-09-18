@@ -1,0 +1,40 @@
+name: Version
+
+# Manually triggered when you're ready to cut a release (not on every
+# commit to master). Bumps the version + changelog from accumulated
+# changesets, commits straight to master, and tags the release — the tag
+# push triggers the Publish workflow.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+      - run: bun test
+
+      - name: Bump version and changelog
+        run: bunx changeset version
+
+      - name: Commit and tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: release v$VERSION"
+          git tag "v$VERSION"
+          git push origin master
+          git push origin "v$VERSION"
