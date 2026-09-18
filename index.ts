@@ -1,7 +1,14 @@
 import type { BetterAuthPlugin } from "better-auth";
-import { APIError, createAuthEndpoint } from "better-auth/api";
+import { APIError, createAuthEndpoint, isAPIError } from "better-auth/api";
 import { mergeSchema } from "better-auth/db";
 import type { InferOptionSchema } from "better-auth/types";
+import {
+	getAddress,
+	recoverTypedDataAddress,
+	type Hex,
+	type TypedData,
+	type TypedDataDomain,
+} from "viem";
 import * as z from "zod";
 import { schema, type WalletAddressSchema } from "./schema";
 import type { ENSLookupArgs, ENSLookupResult } from "./types";
@@ -35,6 +42,35 @@ const isValidSiwtdNonce = (nonce: string | undefined): nonce is string =>
 
 const getSiwtdNonceBodySchema = z.object({}).strict().optional();
 
+const verifySiwtdBodySchema = z
+	.object({
+		domain: z.record(z.string(), z.any()),
+		types: z.record(z.string(), z.any()),
+		primaryType: z.string().min(1),
+		message: z.record(z.string(), z.any()),
+		signature: z.string().min(1),
+	})
+	.strict();
+
+function domainMatches(
+	expected: SIWTDDomainOptions,
+	signed: TypedDataDomain,
+): boolean {
+	if (expected.name !== undefined && expected.name !== signed.name)
+		return false;
+	if (expected.chainId !== undefined && expected.chainId !== signed.chainId)
+		return false;
+	if (
+		expected.verifyingContract !== undefined &&
+		expected.verifyingContract.toLowerCase() !==
+			(signed.verifyingContract as string | undefined)?.toLowerCase()
+	)
+		return false;
+	if (expected.version !== undefined && expected.version !== signed.version)
+		return false;
+	return true;
+}
+
 export const siwtd = (options: SIWTDPluginOptions) => {
 	return {
 		id: "siwtd",
@@ -62,6 +98,98 @@ export const siwtd = (options: SIWTDPluginOptions) => {
 					});
 
 					return ctx.json({ nonce });
+				},
+			),
+			verifySiwtdMessage: createAuthEndpoint(
+				"/siwtd/verify",
+				{
+					method: "POST",
+					body: verifySiwtdBodySchema,
+					requireRequest: true,
+				},
+				async (ctx) => {
+					const { domain, types, primaryType, message, signature } = ctx.body;
+
+					const nonce = message.nonce;
+					if (typeof nonce !== "string" || !isValidSiwtdNonce(nonce)) {
+						throw new APIError("BAD_REQUEST", {
+							message: "message.nonce is required and must be a valid nonce.",
+						});
+					}
+
+					try {
+						const verification =
+							await ctx.context.internalAdapter.consumeVerificationValue(
+								`${SIWTD_VERIFICATION_IDENTIFIER_PREFIX}${nonce}`,
+							);
+						if (!verification) {
+							throw new APIError("UNAUTHORIZED", {
+								message: "Invalid or expired nonce",
+								code: "UNAUTHORIZED_INVALID_OR_EXPIRED_NONCE",
+							});
+						}
+
+						if (!domainMatches(options.domain, domain as TypedDataDomain)) {
+							throw new APIError("UNAUTHORIZED", {
+								message: "Signed domain does not match the expected domain",
+								code: "UNAUTHORIZED_DOMAIN_MISMATCH",
+							});
+						}
+
+						const signedChainId = (domain as TypedDataDomain).chainId;
+						if (typeof signedChainId !== "number" || signedChainId <= 0) {
+							throw new APIError("UNAUTHORIZED", {
+								message: "Signed domain is missing a valid chainId",
+								code: "UNAUTHORIZED_INVALID_CHAIN_ID",
+							});
+						}
+
+						let recovered: `0x${string}`;
+						try {
+							recovered = await recoverTypedDataAddress({
+								domain: domain as TypedDataDomain,
+								types: types as TypedData,
+								primaryType,
+								message,
+								signature: signature as Hex,
+							});
+						} catch {
+							throw new APIError("UNAUTHORIZED", {
+								message: "Invalid signature",
+								code: "UNAUTHORIZED_INVALID_SIGNATURE",
+							});
+						}
+						const walletAddress = getAddress(recovered);
+
+						const expirationTime = message.expirationTime;
+						const notBefore = message.notBefore;
+						const now = Date.now();
+						if (typeof expirationTime === "string") {
+							const expiresAt = Date.parse(expirationTime);
+							if (!Number.isNaN(expiresAt) && now >= expiresAt) {
+								throw new APIError("UNAUTHORIZED", {
+									message: "Message has expired",
+									code: "UNAUTHORIZED_MESSAGE_EXPIRED",
+								});
+							}
+						}
+						if (typeof notBefore === "string") {
+							const notBeforeAt = Date.parse(notBefore);
+							if (!Number.isNaN(notBeforeAt) && now < notBeforeAt) {
+								throw new APIError("UNAUTHORIZED", {
+									message: "Message is not yet valid",
+									code: "UNAUTHORIZED_MESSAGE_NOT_YET_VALID",
+								});
+							}
+						}
+
+						return ctx.json({ walletAddress, chainId: signedChainId });
+					} catch (error: unknown) {
+						if (isAPIError(error)) throw error;
+						throw new APIError("UNAUTHORIZED", {
+							message: "Something went wrong. Please try again later.",
+						});
+					}
 				},
 			),
 		},

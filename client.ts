@@ -7,6 +7,7 @@ export const siwtdClient = () => {
 		$InferServerPlugin: {} as ReturnType<typeof siwtd>,
 		pathMethods: {
 			"/siwtd/nonce": "POST",
+			"/siwtd/verify": "POST",
 		},
 	} satisfies BetterAuthClientPlugin;
 };
