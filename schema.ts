@@ -1,4 +1,4 @@
-import type { InferOptionSchema } from "better-auth/types";
+import type { BetterAuthPluginDBSchema } from "@better-auth/core/db";
 
 export const schema = {
 	walletAddress: {
@@ -30,6 +30,6 @@ export const schema = {
 			},
 		},
 	},
-} as const;
+} satisfies BetterAuthPluginDBSchema;
 
-export type WalletAddressSchema = InferOptionSchema<typeof schema>;
+export type WalletAddressSchema = typeof schema;

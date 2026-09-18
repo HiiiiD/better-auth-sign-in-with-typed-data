@@ -5,6 +5,7 @@
     "": {
       "name": "better-auth-sign-in-with-vechain",
       "dependencies": {
+        "@better-auth/core": "^1.7.5",
         "better-auth": "^1.7.5",
         "viem": "^2.56.8",
         "zod": "^4.6.5",
