@@ -1,6 +1,6 @@
 {
   "name": "better-auth-sign-in-with-typed-data",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A better-auth plugin for logging in by signing EIP-712 typed data instead of a SIWE plain-text message.",
   "license": "MIT",
   "repository": {
